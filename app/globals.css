@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Theme tokens. Values are "R G B" triplets so Tailwind opacity modifiers work.
+ * The dark palette is a deliberate re-step of the same brand hue, not an inversion:
+ * jade brightens so it still carries on a dark ground, and `jade-dark` — which is only
+ * ever used for text and links — becomes a light mint for the same reason.
+ */
+@layer base {
+  :root {
+    --jade: 18 124 103; /* #127C67 */
+    --jade-dark: 12 90 74; /* #0C5A4A */
+    --jade-tint: 241 247 245; /* #F1F7F5 */
+
+    --surface: 255 255 255;
+    --surface-raised: 255 255 255;
+    --ink: 26 43 42; /* #1A2B2A */
+    --body: 46 46 46; /* #2E2E2E */
+    --muted: 107 122 120; /* #6B7A78 */
+    --hairline: 216 227 224; /* #D8E3E0 */
+    --shadow: 26 43 42;
+
+    --banner-bg: 26 43 42;
+    --banner-fg: 255 255 255;
+
+    --warn-bg: 255 251 235;
+    --warn-border: 253 230 138;
+    --warn-fg: 146 64 14;
+
+    --danger-bg: 254 242 242;
+    --danger-border: 254 202 202;
+    --danger-fg: 185 28 28;
+
+    --info-bg: 240 249 255;
+    --info-border: 186 230 253;
+    --info-fg: 7 89 133;
+
+    accent-color: rgb(var(--jade));
+    color-scheme: light;
+  }
+
+  [data-theme='dark'] {
+    --jade: 45 178 150; /* brightened so it reads on a dark ground */
+    --jade-dark: 143 214 197; /* text/link mint */
+    --jade-tint: 22 38 36;
+
+    --surface: 15 27 26;
+    --surface-raised: 21 35 33;
+    --ink: 233 242 240;
+    --body: 205 219 216;
+    --muted: 141 159 156;
+    --hairline: 45 63 60;
+    --shadow: 0 0 0;
+
+    --banner-bg: 21 35 33;
+    --banner-fg: 233 242 240;
+
+    --warn-bg: 58 42 12;
+    --warn-border: 118 82 22;
+    --warn-fg: 252 211 77;
+
+    --danger-bg: 58 22 22;
+    --danger-border: 122 46 46;
+    --danger-fg: 252 165 165;
+
+    --info-bg: 14 40 60;
+    --info-border: 30 82 120;
+    --info-fg: 125 211 252;
+
+    color-scheme: dark;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-surface font-sans text-body antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-serif text-slate-ink;
+  }
+
+  /* One visible focus ring everywhere, for keyboard users only. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-jade ring-offset-2 ring-offset-surface;
+  }
+
+  /* Respect a viewer who has asked for less motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-slate-ink;
+  }
+
+  .field-hint {
+    @apply mt-1 text-xs text-muted;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm text-body
+           placeholder:text-muted/70 focus:border-jade focus:outline-none focus:ring-2 focus:ring-jade/30;
+  }
+
+  .card {
+    @apply rounded-xl border border-hairline bg-surface-raised shadow-card;
+  }
+
+  .section-title {
+    @apply font-serif text-lg text-slate-ink;
+  }
+
+  /* Skeleton placeholder used while a screen simulates loading. */
+  .skeleton {
+    @apply animate-pulse rounded-md bg-hairline/60;
+  }
+}
+
+/* Command palette group headings — cmdk renders its own wrapper elements. */
+.cmd-group [cmdk-group-heading] {
+  @apply px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted;
+}
