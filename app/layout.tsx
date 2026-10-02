@@ -3,7 +3,7 @@ import './globals.css';
 import { AppFrame } from '@/components/AppFrame';
 import { AuthGate } from '@/components/AuthGate';
 import { AuthProvider } from '@/lib/auth';
-import { SESSION_TOKEN_VERSION, STORAGE_KEY } from '@/lib/authConfig';
+import { SESSION_TOKEN, STORAGE_KEY } from '@/lib/authConfig';
 import { DemoProvider } from '@/lib/store';
 import { ThemeProvider } from '@/lib/theme';
 import { ToastProvider } from '@/lib/toast';
@@ -28,9 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // immediately rather than flashing it at someone who is signed in.
   const accessProbe = `try{if(sessionStorage.getItem(${JSON.stringify(
     STORAGE_KEY,
-  )})===${JSON.stringify(
-    SESSION_TOKEN_VERSION,
-  )})document.documentElement.dataset.access='granted'}catch(e){}`;
+  )})===${JSON.stringify(SESSION_TOKEN)})document.documentElement.dataset.access='granted'}catch(e){}`;
 
   return (
     <html lang="en">

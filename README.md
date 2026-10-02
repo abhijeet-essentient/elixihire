@@ -112,20 +112,42 @@ stumbles on the URL or is forwarded the link, which is what it is for. It will n
 anyone who opens developer tools: the JavaScript bundle — including all the mock seed
 data — is downloadable, and the gate can be bypassed by anyone who knows how.
 
-Two things are done to make it as sound as a static site allows:
+Three things are done to make it as sound as a static site allows:
 
+- **It fails closed.** A production build with no credential configured admits *nobody*.
+  There is deliberately no default password, because a default committed to this
+  repository would mean an unconfigured deployment was open to anyone who read the source.
 - The credential is compared as a **SHA-256 hash**, so the plaintext password does not
   appear anywhere in the deployed files.
 - The gate renders *instead of* each screen rather than on top of it, so the pre-rendered
   HTML and RSC payload of every route contain the login screen and **no screen content**.
-  (Verified: no candidate name, organisation, phone number or screen heading appears in
-  any shipped `.html` or `.txt`.)
+
+Sessions are tied to the credential in force when they were created, so rotating the
+password immediately invalidates every existing session.
 
 **If you need real protection,** turn on Vercel's **Deployment Protection**
 (Project → Settings → Deployment Protection). That gates the deployment at the edge,
 before any file is served, so the bundle is never handed to an unauthorised visitor. It
 works alongside this login screen; the two are not mutually exclusive. Check which
 protection modes your Vercel plan includes.
+
+### Verifying a deployment is actually gated
+
+Because the variables are read at build time, the commonest failure is a deployment that
+was never rebuilt. Check the live site from a terminal — this needs no browser and no
+session:
+
+```bash
+# Should print 1 for every route. 0 means that page is serving ungated content.
+for p in / /admin/payroll/ /employer/pipeline/ /candidate/profile/; do
+  printf '%s ' "$p"
+  curl -s "https://YOUR-DEPLOYMENT.vercel.app$p" | grep -c "Restricted demo"
+done
+```
+
+If a route prints `0`, the deployment is stale: redeploy in Vercel and re-run. If it
+prints `1` but you can still reach pages in your browser, you have an existing session in
+that tab — use a private window, or **Sign out** in the header.
 
 ### Configuring the credential
 
@@ -147,24 +169,35 @@ npm run hash-password -- 'your-password-here'
 > no effect until you **redeploy**. Vercel offers "Redeploy" on the latest deployment for
 > exactly this.
 
-If no credential is configured at all, the build falls back to a development default
-(`essentient` / `elixihire-demo`) and the login screen displays a prominent warning
-telling you to configure one. Never leave a deployment in that state — the default is in
-this repository.
+With nothing configured, a production build shows a "this deployment is sealed" notice and
+disables the sign-in form. That is the intended safe state, not a bug — but do not leave a
+deployment there if you want reviewers to get in.
 
 For local development, copy [`.env.example`](.env.example) to `.env.local` and fill it in.
-`.env.local` is gitignored; share the credential with reviewers out of band, not in the
-repo.
+With neither variable set, `npm run dev` accepts the password `local-dev-only`; that path
+is compiled out of production builds. `.env.local` is gitignored — share the real
+credential with reviewers out of band, never in the repo.
 
 ### Rotating or revoking access
 
-- **Change the password:** regenerate the hash, update the Vercel variable, redeploy.
-- **Force everyone to sign in again:** bump `SESSION_TOKEN_VERSION` in
-  [`lib/authConfig.ts`](lib/authConfig.ts). Existing sessions become invalid.
+- **Change the password:** regenerate the hash, update the Vercel variable, redeploy. Every
+  existing session is invalidated automatically, because the session token is derived from
+  the credential.
+- **Lock everyone out immediately:** delete the credential variables and redeploy. The gate
+  seals.
 - Signing out is available in the header, the footer and the command palette.
 
-The demo also ships `robots.txt` disallowing all crawlers and a `noindex, nofollow` meta
-tag, so a gated deployment does not end up in search results.
+### Caching and indexing
+
+[`vercel.json`](vercel.json) sets `Cache-Control: no-store` on every document response, so
+a stale HTML copy — from before the gate existed, or from before a credential rotation —
+can never be served from an edge or browser cache. Hashed build assets under
+`/_next/static/` are still cached immutably. It also sends `X-Robots-Tag: noindex`,
+`X-Frame-Options: DENY` and `Referrer-Policy: no-referrer`; `robots.txt` and a `noindex`
+meta tag cover crawlers that ignore headers.
+
+If you deployed before these headers existed, do a hard reload (Ctrl/Cmd-Shift-R) once —
+your browser may still be holding the pre-gate HTML.
 
 ## Running it
 
@@ -260,6 +293,7 @@ lib/services/recommendationService.ts  Candidate feed, similar jobs, profile com
 lib/services/draftingService.ts   Deterministic "AI assist" templates
 lib/services/verificationService.ts  Manual approve / hold / reject
 scripts/hash-password.mjs         Generates NEXT_PUBLIC_DEMO_PASSWORD_SHA256
+vercel.json                       no-store on HTML, noindex + security headers
 public/robots.txt                 Disallows crawlers on the private demo
 .env.example                      Credential variables, documented
 next.config.js                    output: 'export'

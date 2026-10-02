@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { DemoBadge } from './DemoBadge';
 import { ElixiHireLogo, EssentientLogo } from './Logos';
 import { Button, Field } from './ui';
-import { ACCESS_CONTACT, useAuth } from '@/lib/auth';
+import { ACCESS_CONTACT, gateUnconfigured, useAuth } from '@/lib/auth';
 
 /**
  * The gate. Stands alone — no navigation, no persona switcher, nothing from the demo
@@ -14,7 +14,7 @@ import { ACCESS_CONTACT, useAuth } from '@/lib/auth';
  * route contains only this.
  */
 export function LoginScreen({ prehydration = false }: { prehydration?: boolean }) {
-  const { signIn, username: configuredUsername, credentialSource } = useAuth();
+  const { signIn, credentialSource } = useAuth();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -40,9 +40,11 @@ export function LoginScreen({ prehydration = false }: { prehydration?: boolean }
       setAttempts((n) => n + 1);
       setPassword('');
       setError(
-        result.reason === 'unavailable'
-          ? 'This browser cannot verify the credential here. Open the demo over https (or on localhost) and try again.'
-          : 'That username and password combination is not recognised.',
+        result.reason === 'unconfigured'
+          ? 'This deployment has no access credential configured, so it cannot admit anyone. Please contact the administrator.'
+          : result.reason === 'unavailable'
+            ? 'This browser cannot verify the credential here. Open the demo over https (or on localhost) and try again.'
+            : 'That username and password combination is not recognised.',
       );
     }
     setBusy(false);
@@ -137,7 +139,11 @@ export function LoginScreen({ prehydration = false }: { prehydration?: boolean }
                 </p>
               ) : null}
 
-              <Button type="submit" className="w-full" disabled={busy || !username || !password}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={busy || gateUnconfigured || !username || !password}
+              >
                 {busy ? 'Checking…' : 'Enter the demo'}
               </Button>
             </form>
@@ -159,15 +165,16 @@ export function LoginScreen({ prehydration = false }: { prehydration?: boolean }
               </p>
             </div>
 
-            {credentialSource === 'fallback' ? (
-              <p className="mt-4 flex items-start gap-2 rounded-lg border border-warn-border bg-warn-bg px-3 py-2 text-xs text-warn-fg">
+            {gateUnconfigured ? (
+              <p className="mt-4 flex items-start gap-2 rounded-lg border border-danger-border bg-danger-bg px-3 py-2 text-xs text-danger-fg">
                 <TriangleAlert aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  <strong>This deployment has no credential configured</strong> and is using the
-                  built-in development default. Set{' '}
-                  <code className="font-mono">NEXT_PUBLIC_DEMO_PASSWORD_SHA256</code> in the Vercel
-                  project settings and redeploy. The expected username is{' '}
-                  <code className="font-mono">{configuredUsername}</code>.
+                  <strong>This deployment is sealed.</strong> No access credential has been
+                  configured, so sign-in is disabled for everyone — there is no default to fall back
+                  on. If you administer this demo, set{' '}
+                  <code className="font-mono">NEXT_PUBLIC_DEMO_PASSWORD_SHA256</code> and{' '}
+                  <code className="font-mono">NEXT_PUBLIC_DEMO_USERNAME</code> in the Vercel project
+                  settings, then redeploy.
                 </span>
               </p>
             ) : null}
@@ -181,6 +188,17 @@ export function LoginScreen({ prehydration = false }: { prehydration?: boolean }
                 </span>
               </p>
             ) : null}
+
+            {credentialSource === 'dev' ? (
+              <p className="mt-4 flex items-start gap-2 rounded-lg border border-warn-border bg-warn-bg px-3 py-2 text-xs text-warn-fg">
+                <TriangleAlert aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>
+                  Running the local development credential. This path does not exist in a production
+                  build — see <code className="font-mono">.env.example</code>.
+                </span>
+              </p>
+            ) : null}
+
           </div>
 
           <p className="mt-5 text-center text-xs text-muted">

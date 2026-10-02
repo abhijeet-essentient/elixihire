@@ -36,14 +36,15 @@ import {
   CONFIGURED_HASH,
   CONFIGURED_PLAINTEXT,
   CONFIGURED_USERNAME,
-  FALLBACK_PASSWORD,
-  SESSION_TOKEN_VERSION,
+  DEV_FALLBACK_PASSWORD,
+  SESSION_TOKEN,
   STORAGE_KEY,
   credentialSource,
+  gateUnconfigured,
   type CredentialSource,
 } from './authConfig';
 
-export { ACCESS_CONTACT, credentialSource } from './authConfig';
+export { ACCESS_CONTACT, credentialSource, gateUnconfigured } from './authConfig';
 export type { CredentialSource } from './authConfig';
 
 async function sha256Hex(input: string): Promise<string | null> {
@@ -58,7 +59,7 @@ async function sha256Hex(input: string): Promise<string | null> {
 
 export type SignInResult =
   | { ok: true }
-  | { ok: false; reason: 'wrong' | 'unavailable' };
+  | { ok: false; reason: 'wrong' | 'unavailable' | 'unconfigured' };
 
 interface AuthContextValue {
   /** True once the viewer has signed in during this tab's session. */
@@ -81,7 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // pre-rendered markup, and the pre-render must always be the locked state.
   useEffect(() => {
     try {
-      setAuthed(window.sessionStorage.getItem(STORAGE_KEY) === SESSION_TOKEN_VERSION);
+      // Never honour a stored session when nothing is configured.
+      setAuthed(
+        !gateUnconfigured && window.sessionStorage.getItem(STORAGE_KEY) === SESSION_TOKEN,
+      );
     } catch {
       // Blocked storage — the viewer simply signs in again.
     }
@@ -89,6 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (user: string, password: string): Promise<SignInResult> => {
+    // Fail closed: with nothing configured there is no credential to match, so nobody
+    // gets in. The alternative — a default baked into the source — would mean an
+    // unconfigured deployment was open to anyone who read this repository.
+    if (gateUnconfigured) return { ok: false, reason: 'unconfigured' };
+
     const userOk = user.trim().toLowerCase() === CONFIGURED_USERNAME.toLowerCase();
 
     let passwordOk = false;
@@ -99,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else if (credentialSource === 'plaintext') {
       passwordOk = password === CONFIGURED_PLAINTEXT;
     } else {
-      passwordOk = password === FALLBACK_PASSWORD;
+      passwordOk = DEV_FALLBACK_PASSWORD !== '' && password === DEV_FALLBACK_PASSWORD;
     }
 
     // Both halves are checked before answering, so a wrong username and a wrong
@@ -110,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Keep the document marker in step with the session, so a reload is paint-clean.
     document.documentElement.dataset.access = 'granted';
     try {
-      window.sessionStorage.setItem(STORAGE_KEY, SESSION_TOKEN_VERSION);
+      window.sessionStorage.setItem(STORAGE_KEY, SESSION_TOKEN);
     } catch {
       // Access still works for this page view; it just will not survive a reload.
     }
