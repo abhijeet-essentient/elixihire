@@ -1,7 +1,7 @@
+'use client';
+
 import { TierBadge } from '@/components/TierBadge';
 import { Card, Chip, Section } from '@/components/ui';
-
-export const metadata = { title: 'Roadmap — ElixiHire' };
 
 interface RoadmapItem {
   name: string;

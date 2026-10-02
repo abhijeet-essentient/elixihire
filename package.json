@@ -2,13 +2,14 @@
   "name": "elixihire-demo",
   "version": "0.1.0",
   "private": true,
-  "description": "ElixiHire interactive demo — a static, front-end-only clickable prototype by Essentient.",
+  "description": "ElixiHire interactive demo \u2014 a static, front-end-only clickable prototype by Essentient.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "npx serve@latest out",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "hash-password": "node scripts/hash-password.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

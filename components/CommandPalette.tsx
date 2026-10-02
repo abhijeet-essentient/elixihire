@@ -4,6 +4,7 @@ import { Command } from 'cmdk';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BriefcaseBusiness,
+  LogOut,
   Moon,
   PlayCircle,
   RotateCcw,
@@ -13,6 +14,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { GLOBAL_PAGES, NAV, ROLE_LABEL } from './nav';
+import { useAuth } from '@/lib/auth';
 import { maskedName } from '@/lib/mask';
 import { useDemo } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -27,6 +29,7 @@ export function CommandPalette({ onStartTour }: { onStartTour: () => void }) {
   const router = useRouter();
   const { jobs, candidates, resetDemo, setRole } = useDemo();
   const { theme, toggle } = useTheme();
+  const { signOut } = useAuth();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -92,6 +95,9 @@ export function CommandPalette({ onStartTour }: { onStartTour: () => void }) {
                   </Item>
                   <Item onSelect={() => run(resetDemo)} icon={<RotateCcw className="h-4 w-4" />}>
                     Reset demo data
+                  </Item>
+                  <Item onSelect={() => run(signOut)} icon={<LogOut className="h-4 w-4" />}>
+                    Sign out of the demo
                   </Item>
                 </Command.Group>
 

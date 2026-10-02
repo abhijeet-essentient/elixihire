@@ -127,6 +127,15 @@
     @apply font-serif text-lg text-slate-ink;
   }
 
+  /*
+   * The pre-hydration copy of the login screen. It is in the HTML so the restricted
+   * notice is visible without JavaScript, and is removed before paint when the
+   * pre-paint probe in the root layout finds an existing session.
+   */
+  :root[data-access='granted'] [data-auth-prehydration='true'] {
+    display: none !important;
+  }
+
   /* Skeleton placeholder used while a screen simulates loading. */
   .skeleton {
     @apply animate-pulse rounded-md bg-hairline/60;

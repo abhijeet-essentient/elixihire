@@ -6,6 +6,10 @@ for wireframes: it looks and behaves like the product, but there is nothing behi
 
 > **DEMO · illustrative only — no live data.** Every person, organisation, identifier and vacancy
 > in this demo is invented.
+>
+> **Access is restricted.** The demo sits behind a login screen — see
+> [Access control](#access-control) for how to configure it, and for an honest account of
+> what a client-side gate on a static site can and cannot do.
 
 ---
 
@@ -95,6 +99,73 @@ streams.
 All money is in **INR**. State lives in memory for the session; `localStorage` is used only so a
 reload does not throw away what you just did, with every access wrapped in `try`/`catch`.
 
+## Access control
+
+The demo is gated behind a login screen. Every route renders the restricted notice until
+a viewer signs in, and the sign-in state lasts for the browser tab's session.
+
+### Read this before relying on it
+
+**This is a deterrent, not security.** The site is a static export with no server, so the
+credential check necessarily runs in the visitor's browser. It will stop someone who
+stumbles on the URL or is forwarded the link, which is what it is for. It will not stop
+anyone who opens developer tools: the JavaScript bundle — including all the mock seed
+data — is downloadable, and the gate can be bypassed by anyone who knows how.
+
+Two things are done to make it as sound as a static site allows:
+
+- The credential is compared as a **SHA-256 hash**, so the plaintext password does not
+  appear anywhere in the deployed files.
+- The gate renders *instead of* each screen rather than on top of it, so the pre-rendered
+  HTML and RSC payload of every route contain the login screen and **no screen content**.
+  (Verified: no candidate name, organisation, phone number or screen heading appears in
+  any shipped `.html` or `.txt`.)
+
+**If you need real protection,** turn on Vercel's **Deployment Protection**
+(Project → Settings → Deployment Protection). That gates the deployment at the edge,
+before any file is served, so the bundle is never handed to an unauthorised visitor. It
+works alongside this login screen; the two are not mutually exclusive. Check which
+protection modes your Vercel plan includes.
+
+### Configuring the credential
+
+Set these in Vercel under **Settings → Environment Variables**:
+
+| Variable | Purpose |
+|---|---|
+| `NEXT_PUBLIC_DEMO_USERNAME` | Username reviewers type. Defaults to `essentient`. |
+| `NEXT_PUBLIC_DEMO_PASSWORD_SHA256` | **Preferred.** SHA-256 hash of the password. |
+| `NEXT_PUBLIC_DEMO_PASSWORD` | Fallback plaintext password. Readable in the bundle; the login screen warns while it is in use. |
+
+Generate the hash locally and paste the result into Vercel:
+
+```bash
+npm run hash-password -- 'your-password-here'
+```
+
+> **These variables are read at build time, not at run time.** Changing one in Vercel has
+> no effect until you **redeploy**. Vercel offers "Redeploy" on the latest deployment for
+> exactly this.
+
+If no credential is configured at all, the build falls back to a development default
+(`essentient` / `elixihire-demo`) and the login screen displays a prominent warning
+telling you to configure one. Never leave a deployment in that state — the default is in
+this repository.
+
+For local development, copy [`.env.example`](.env.example) to `.env.local` and fill it in.
+`.env.local` is gitignored; share the credential with reviewers out of band, not in the
+repo.
+
+### Rotating or revoking access
+
+- **Change the password:** regenerate the hash, update the Vercel variable, redeploy.
+- **Force everyone to sign in again:** bump `SESSION_TOKEN_VERSION` in
+  [`lib/authConfig.ts`](lib/authConfig.ts). Existing sessions become invalid.
+- Signing out is available in the header, the footer and the command palette.
+
+The demo also ships `robots.txt` disallowing all crawlers and a `noindex, nofollow` meta
+tag, so a gated deployment does not end up in search results.
+
 ## Running it
 
 Requires Node 18.17+ (developed on Node 22).
@@ -116,7 +187,9 @@ The build is configured with `output: 'export'` in [`next.config.js`](next.confi
 
 ## Deploying to Vercel
 
-The static output needs **no environment variables, no backend and no build settings**.
+The static output needs **no backend and no build settings**. It needs no environment
+variables to *build*, but you should set the access credential before sharing the URL —
+see [Access control](#access-control).
 
 **(a) Git import — recommended**
 
@@ -170,6 +243,7 @@ components/
   ui.tsx, Overlays (Modal/Drawer), DataTable             shared primitives
   charts/index.tsx                                       Recharts wrappers
   Charts.tsx                                             hand-drawn SVG bars
+  AuthGate, LoginScreen                                  access gate
   FitBadge, MaskedName, JobCard, PipelineBoard,          domain components
     EngagementDrawer, StatusChips
 lib/types.ts                      Domain model
@@ -177,12 +251,17 @@ lib/seed.ts                       All mock data
 lib/taxonomy.ts                   Starting reference lists (seeded into the editable taxonomy)
 lib/mask.ts                       PII masking helpers
 lib/store.tsx                     React Context in-memory store + Reset demo
+lib/auth.tsx                      Access gate provider (client-side, see Access control)
+lib/authConfig.ts                 Credential + session config, read by the layout too
 lib/theme.tsx                     Light/dark theme + chart palette
 lib/toast.tsx                     Toast notifications
 lib/services/matchingService.ts   computeFit(job, candidate) — the rule-based USP
 lib/services/recommendationService.ts  Candidate feed, similar jobs, profile completeness
 lib/services/draftingService.ts   Deterministic "AI assist" templates
 lib/services/verificationService.ts  Manual approve / hold / reject
+scripts/hash-password.mjs         Generates NEXT_PUBLIC_DEMO_PASSWORD_SHA256
+public/robots.txt                 Disallows crawlers on the private demo
+.env.example                      Credential variables, documented
 next.config.js                    output: 'export'
 ```
 

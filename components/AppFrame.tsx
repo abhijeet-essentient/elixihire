@@ -1,6 +1,6 @@
 'use client';
 
-import { PlayCircle, Search } from 'lucide-react';
+import { LogOut, PlayCircle, Search } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -14,6 +14,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { TierBadge } from './TierBadge';
 import { Toasts } from './Toasts';
 import { Button } from './ui';
+import { useAuth } from '@/lib/auth';
 import { useDemo } from '@/lib/store';
 
 /**
@@ -25,6 +26,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '/';
   const role = roleFromPath(pathname);
   const { setRole, resetDemo } = useDemo();
+  const { signOut } = useAuth();
   const tour = useTourController();
 
   // The URL is the source of truth for the persona; keep the store in step with it.
@@ -71,6 +73,15 @@ export function AppFrame({ children }: { children: ReactNode }) {
             <RoleSwitcher active={role} />
             <ThemeToggle />
             <ResetButton onReset={resetDemo} />
+            <button
+              type="button"
+              onClick={signOut}
+              title="Sign out of the demo"
+              aria-label="Sign out of the demo"
+              className="rounded-lg border border-hairline p-1.5 text-muted transition-colors hover:bg-jade-tint hover:text-slate-ink"
+            >
+              <LogOut aria-hidden="true" className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
@@ -143,6 +154,13 @@ export function AppFrame({ children }: { children: ReactNode }) {
             <Link href="/roadmap/" className="rounded text-xs text-muted underline-offset-2 hover:underline">
               Roadmap
             </Link>
+            <button
+              type="button"
+              onClick={signOut}
+              className="rounded text-xs text-muted underline-offset-2 hover:underline"
+            >
+              Sign out
+            </button>
             <DemoBadge />
           </div>
         </div>

@@ -1,7 +1,7 @@
+'use client';
+
 import { TierBadge } from '@/components/TierBadge';
 import { Card, Section } from '@/components/ui';
-
-export const metadata = { title: 'About this demo — ElixiHire' };
 
 export default function AboutPage() {
   return (
